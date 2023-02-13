@@ -7,7 +7,12 @@ data "aws_ami" "aws_linux_2_latest" {
   }
 }
 
-resource "null_resource" "index_file" {
+resource "null_resource" "file_provisioner" {
+  depends_on = [
+      aws_instance.webserver
+  ]
+
+
     provisioner "local-exec" {
       command = "echo Welcome to Terraform provisioner > files/index.html"
     }
@@ -24,13 +29,31 @@ resource "null_resource" "index_file" {
       source      = "./files/"
       destination = "/tmp/"
     }
-
-    provisioner "remote-exec" {
-      inline = [
-        "cp /tmp/index.html /var/www/html/index.html",        
-      ]
-    }
 }
+
+resource "null_resource" "remote_provisioner" {
+  depends_on = [
+      null_resource.file_provisioner
+  ]
+
+  connection {
+    type     = "ssh"
+    user     = "ec2-user"
+    private_key = file("./terraform.pem")
+    host     = aws_instance.webserver.public_ip
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sleep 60",
+      "sed -i -e 's/\r$//' /tmp/index.html",
+      "chmod 744 /tmp/index.html",
+      "sudo cp -R /tmp/index.html /var/www/html/",
+    ]
+  }
+
+}
+
 
 resource "aws_instance" "webserver" {
 
