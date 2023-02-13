@@ -7,16 +7,42 @@ data "aws_ami" "aws_linux_2_latest" {
   }
 }
 
+resource "null_resource" "index_file" {
+    provisioner "local-exec" {
+      command = "echo Welcome to Terraform provisioner > files/index.html"
+    }
+
+    connection {
+      type     = "ssh"
+      user     = "ec2-user"
+      private_key = file("./terraform.pem")
+      host     = aws_instance.webserver.public_ip
+    }
+
+    # Copies the index file
+    provisioner "file" {
+      source      = "./files/"
+      destination = "/tmp/"
+    }
+
+    provisioner "remote-exec" {
+      inline = [
+        "cp /tmp/index.html /var/www/html/index.html",        
+      ]
+    }
+}
+
 resource "aws_instance" "webserver" {
-    count = 3
+
     ami           = data.aws_ami.aws_linux_2_latest.id
     instance_type = var.instance_type
     user_data = file("./scripts/install_httpd.sh")
     user_data_replace_on_change = true
+    key_name = "terraform"
 
     vpc_security_group_ids = [aws_security_group.webserver_sg.id]
     tags = {
-        Name = "${var.custom_tags["Name"]}-${var.environments[count.index]}"
+        Name = "${var.custom_tags["Name"]}"
         Env  = var.custom_tags["Env"]
         Owner = var.custom_tags["Owner"]
     }

@@ -32,3 +32,7 @@ variable "custom_tags"{
 variable "environments"{
   default = ["Dev", "Staging", "Prod"]
 }
+
+output "webserver_public_ip-1" {
+    value = aws_instance.webserver.public_ip
+}
