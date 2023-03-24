@@ -1,0 +1,6 @@
+FROM centos:7
+LABEL maintainer=Rntech
+WORKDIR /var/www/html/
+RUN yum update -y && yum install httpd -y
+COPY index.html .
+ENTRYPOINT apachectl "-DFOREGROUND"
