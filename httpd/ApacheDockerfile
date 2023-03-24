@@ -3,4 +3,5 @@ LABEL maintainer=Rntech
 WORKDIR /var/www/html/
 RUN yum update -y && yum install httpd -y
 COPY index.html .
+EXPOSE 80
 ENTRYPOINT apachectl "-DFOREGROUND"
